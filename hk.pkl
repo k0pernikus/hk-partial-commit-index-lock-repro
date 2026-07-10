@@ -1,0 +1,13 @@
+amends "package://github.com/jdx/hk/releases/download/v1.50.0/hk@1.50.0#/Config.pkl"
+
+hooks {
+  ["pre-commit"] {
+    stash = "git"
+    steps {
+      ["noop"] {
+        glob = "*.txt"
+        check = "true"
+      }
+    }
+  }
+}

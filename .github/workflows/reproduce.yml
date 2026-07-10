@@ -1,0 +1,15 @@
+name: reproduce
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: Reproduce hk pre-commit index.lock no-retry on a partial commit
+        run: bash reproduce.sh
