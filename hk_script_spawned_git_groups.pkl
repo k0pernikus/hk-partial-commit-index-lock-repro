@@ -1,0 +1,453 @@
+amends "package://github.com/jdx/hk/releases/download/v1.54.0/hk@1.54.0#/Config.pkl"
+
+// The remedy for the collision, expressed with the mechanism hk already documents.
+//
+// Identical to hk_script_spawned_git.pkl — same 48 steps, same generator script, same random
+// delays — except each git-invoking step sits in its OWN Group. Per hk's docs a group waits for
+// previous steps/groups and blocks others from starting until it finishes, so the writers are
+// serialised and cannot contend for .git/index.lock.
+//
+// It works, and the cost is the point: one group per writer, hand-written, and total
+// serialisation rather than just mutual exclusion of the git call. Nothing in hk's output tells
+// an author this is the fix when the collision happens.
+hooks {
+  ["pre-commit"] {
+    fix = true
+    stash = "git"
+    stage = true
+    steps {
+      ["writer0"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate0"] = new Step {
+            glob = "index_trigger0.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 0"
+            stage = List()
+          }
+        }
+      }
+      ["writer1"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate1"] = new Step {
+            glob = "index_trigger1.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 1"
+            stage = List()
+          }
+        }
+      }
+      ["writer2"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate2"] = new Step {
+            glob = "index_trigger2.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 2"
+            stage = List()
+          }
+        }
+      }
+      ["writer3"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate3"] = new Step {
+            glob = "index_trigger3.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 3"
+            stage = List()
+          }
+        }
+      }
+      ["writer4"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate4"] = new Step {
+            glob = "index_trigger4.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 4"
+            stage = List()
+          }
+        }
+      }
+      ["writer5"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate5"] = new Step {
+            glob = "index_trigger5.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 5"
+            stage = List()
+          }
+        }
+      }
+      ["writer6"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate6"] = new Step {
+            glob = "index_trigger6.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 6"
+            stage = List()
+          }
+        }
+      }
+      ["writer7"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate7"] = new Step {
+            glob = "index_trigger7.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 7"
+            stage = List()
+          }
+        }
+      }
+      ["writer8"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate8"] = new Step {
+            glob = "index_trigger8.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 8"
+            stage = List()
+          }
+        }
+      }
+      ["writer9"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate9"] = new Step {
+            glob = "index_trigger9.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 9"
+            stage = List()
+          }
+        }
+      }
+      ["writer10"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate10"] = new Step {
+            glob = "index_trigger10.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 10"
+            stage = List()
+          }
+        }
+      }
+      ["writer11"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate11"] = new Step {
+            glob = "index_trigger11.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 11"
+            stage = List()
+          }
+        }
+      }
+      ["writer12"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate12"] = new Step {
+            glob = "index_trigger12.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 12"
+            stage = List()
+          }
+        }
+      }
+      ["writer13"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate13"] = new Step {
+            glob = "index_trigger13.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 13"
+            stage = List()
+          }
+        }
+      }
+      ["writer14"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate14"] = new Step {
+            glob = "index_trigger14.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 14"
+            stage = List()
+          }
+        }
+      }
+      ["writer15"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate15"] = new Step {
+            glob = "index_trigger15.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 15"
+            stage = List()
+          }
+        }
+      }
+      ["writer16"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate16"] = new Step {
+            glob = "index_trigger16.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 16"
+            stage = List()
+          }
+        }
+      }
+      ["writer17"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate17"] = new Step {
+            glob = "index_trigger17.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 17"
+            stage = List()
+          }
+        }
+      }
+      ["writer18"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate18"] = new Step {
+            glob = "index_trigger18.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 18"
+            stage = List()
+          }
+        }
+      }
+      ["writer19"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate19"] = new Step {
+            glob = "index_trigger19.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 19"
+            stage = List()
+          }
+        }
+      }
+      ["writer20"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate20"] = new Step {
+            glob = "index_trigger20.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 20"
+            stage = List()
+          }
+        }
+      }
+      ["writer21"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate21"] = new Step {
+            glob = "index_trigger21.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 21"
+            stage = List()
+          }
+        }
+      }
+      ["writer22"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate22"] = new Step {
+            glob = "index_trigger22.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 22"
+            stage = List()
+          }
+        }
+      }
+      ["writer23"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate23"] = new Step {
+            glob = "index_trigger23.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 23"
+            stage = List()
+          }
+        }
+      }
+      ["writer24"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate24"] = new Step {
+            glob = "index_trigger24.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 24"
+            stage = List()
+          }
+        }
+      }
+      ["writer25"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate25"] = new Step {
+            glob = "index_trigger25.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 25"
+            stage = List()
+          }
+        }
+      }
+      ["writer26"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate26"] = new Step {
+            glob = "index_trigger26.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 26"
+            stage = List()
+          }
+        }
+      }
+      ["writer27"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate27"] = new Step {
+            glob = "index_trigger27.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 27"
+            stage = List()
+          }
+        }
+      }
+      ["writer28"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate28"] = new Step {
+            glob = "index_trigger28.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 28"
+            stage = List()
+          }
+        }
+      }
+      ["writer29"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate29"] = new Step {
+            glob = "index_trigger29.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 29"
+            stage = List()
+          }
+        }
+      }
+      ["writer30"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate30"] = new Step {
+            glob = "index_trigger30.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 30"
+            stage = List()
+          }
+        }
+      }
+      ["writer31"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate31"] = new Step {
+            glob = "index_trigger31.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 31"
+            stage = List()
+          }
+        }
+      }
+      ["writer32"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate32"] = new Step {
+            glob = "index_trigger32.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 32"
+            stage = List()
+          }
+        }
+      }
+      ["writer33"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate33"] = new Step {
+            glob = "index_trigger33.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 33"
+            stage = List()
+          }
+        }
+      }
+      ["writer34"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate34"] = new Step {
+            glob = "index_trigger34.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 34"
+            stage = List()
+          }
+        }
+      }
+      ["writer35"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate35"] = new Step {
+            glob = "index_trigger35.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 35"
+            stage = List()
+          }
+        }
+      }
+      ["writer36"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate36"] = new Step {
+            glob = "index_trigger36.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 36"
+            stage = List()
+          }
+        }
+      }
+      ["writer37"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate37"] = new Step {
+            glob = "index_trigger37.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 37"
+            stage = List()
+          }
+        }
+      }
+      ["writer38"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate38"] = new Step {
+            glob = "index_trigger38.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 38"
+            stage = List()
+          }
+        }
+      }
+      ["writer39"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate39"] = new Step {
+            glob = "index_trigger39.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 39"
+            stage = List()
+          }
+        }
+      }
+      ["writer40"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate40"] = new Step {
+            glob = "index_trigger40.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 40"
+            stage = List()
+          }
+        }
+      }
+      ["writer41"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate41"] = new Step {
+            glob = "index_trigger41.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 41"
+            stage = List()
+          }
+        }
+      }
+      ["writer42"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate42"] = new Step {
+            glob = "index_trigger42.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 42"
+            stage = List()
+          }
+        }
+      }
+      ["writer43"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate43"] = new Step {
+            glob = "index_trigger43.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 43"
+            stage = List()
+          }
+        }
+      }
+      ["writer44"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate44"] = new Step {
+            glob = "index_trigger44.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 44"
+            stage = List()
+          }
+        }
+      }
+      ["writer45"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate45"] = new Step {
+            glob = "index_trigger45.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 45"
+            stage = List()
+          }
+        }
+      }
+      ["writer46"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate46"] = new Step {
+            glob = "index_trigger46.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 46"
+            stage = List()
+          }
+        }
+      }
+      ["writer47"] = new Group {
+        steps = new Mapping<String, Step> {
+          ["regenerate47"] = new Step {
+            glob = "index_trigger47.txt"
+            fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 47"
+            stage = List()
+          }
+        }
+      }
+    }
+  }
+}

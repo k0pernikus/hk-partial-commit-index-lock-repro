@@ -1,10 +1,10 @@
 amends "package://github.com/jdx/hk/releases/download/v1.54.0/hk@1.54.0#/Config.pkl"
 
-// A pre-commit hook that grew: 24 small, fast steps, each of which happens to touch the git
+// A pre-commit hook that grew: 48 small, fast steps, each of which happens to touch the git
 // index. Every glob is DISJOINT, so hk's file locks see no conflict and schedule the steps in
 // parallel. Each draws its own random delay from random_fast_sleep.sh, so nothing here lines them
-// up — the overlap is the scheduler's. With enough steps, one pair overlapping is inevitable, and
-// the loser dies on index.lock.
+// up — the overlap is the scheduler's. The step count is what makes a collision reliable: a CI
+// runner with few cores parallelises less, so fewer steps go long stretches without colliding.
 hooks {
   ["pre-commit"] {
     fix = true
@@ -129,6 +129,126 @@ hooks {
       ["chmod23"] {
         glob = "index_trigger23.txt"
         fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script23.sh"
+        stage = List()
+      }
+      ["chmod24"] {
+        glob = "index_trigger24.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script24.sh"
+        stage = List()
+      }
+      ["chmod25"] {
+        glob = "index_trigger25.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script25.sh"
+        stage = List()
+      }
+      ["chmod26"] {
+        glob = "index_trigger26.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script26.sh"
+        stage = List()
+      }
+      ["chmod27"] {
+        glob = "index_trigger27.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script27.sh"
+        stage = List()
+      }
+      ["chmod28"] {
+        glob = "index_trigger28.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script28.sh"
+        stage = List()
+      }
+      ["chmod29"] {
+        glob = "index_trigger29.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script29.sh"
+        stage = List()
+      }
+      ["chmod30"] {
+        glob = "index_trigger30.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script30.sh"
+        stage = List()
+      }
+      ["chmod31"] {
+        glob = "index_trigger31.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script31.sh"
+        stage = List()
+      }
+      ["chmod32"] {
+        glob = "index_trigger32.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script32.sh"
+        stage = List()
+      }
+      ["chmod33"] {
+        glob = "index_trigger33.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script33.sh"
+        stage = List()
+      }
+      ["chmod34"] {
+        glob = "index_trigger34.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script34.sh"
+        stage = List()
+      }
+      ["chmod35"] {
+        glob = "index_trigger35.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script35.sh"
+        stage = List()
+      }
+      ["chmod36"] {
+        glob = "index_trigger36.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script36.sh"
+        stage = List()
+      }
+      ["chmod37"] {
+        glob = "index_trigger37.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script37.sh"
+        stage = List()
+      }
+      ["chmod38"] {
+        glob = "index_trigger38.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script38.sh"
+        stage = List()
+      }
+      ["chmod39"] {
+        glob = "index_trigger39.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script39.sh"
+        stage = List()
+      }
+      ["chmod40"] {
+        glob = "index_trigger40.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script40.sh"
+        stage = List()
+      }
+      ["chmod41"] {
+        glob = "index_trigger41.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script41.sh"
+        stage = List()
+      }
+      ["chmod42"] {
+        glob = "index_trigger42.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script42.sh"
+        stage = List()
+      }
+      ["chmod43"] {
+        glob = "index_trigger43.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script43.sh"
+        stage = List()
+      }
+      ["chmod44"] {
+        glob = "index_trigger44.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script44.sh"
+        stage = List()
+      }
+      ["chmod45"] {
+        glob = "index_trigger45.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script45.sh"
+        stage = List()
+      }
+      ["chmod46"] {
+        glob = "index_trigger46.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script46.sh"
+        stage = List()
+      }
+      ["chmod47"] {
+        glob = "index_trigger47.txt"
+        fix = "bash random_fast_sleep.sh && git update-index --chmod=+x script47.sh"
         stage = List()
       }
     }

@@ -19,6 +19,10 @@ jobs:
             script: check_lock_released_inside_wait_window_recovers.sh
           - name: "expected green: lock that never clears aborts, as hk intends"
             script: check_lock_outliving_wait_window_aborts.sh
+          - name: "expected green: the same racing steps, serialised with groups"
+            script: check_script_spawned_git_with_groups_succeeds.sh
+          - name: "open question: a real config's shape, one external git call"
+            script: check_sentinel_shaped_config_collides.sh
           - name: "expected red: parallel steps running git update-index collide on the index"
             script: check_concurrent_index_writers_collide.sh
           - name: "expected red: parallel steps whose script runs git collide on the index"

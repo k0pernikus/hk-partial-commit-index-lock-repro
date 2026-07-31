@@ -88,12 +88,12 @@ hk_run_pre_commit_with_lock() {
 
 # --- concurrent index-writer scenario -----------------------------------------------------------
 #
-# Six steps with DISJOINT globs, so hk's file locks see no conflict and run them in parallel. Each
-# step's fix shells out to `git update-index`, an external git outside hk's own Repo mutex, so the
-# six contend for .git/index.lock with nothing serialising them. A shared sleep aligns them, so a
-# collision is near-certain; WHICH step loses is a race and does not matter.
+# Many steps with DISJOINT globs, so hk's file locks see no conflict and run them in parallel. Each
+# step's fix shells out to git, an external process outside hk's own Repo mutex, so they contend for
+# .git/index.lock with nothing serialising them. Delays are random per step, so the step COUNT is what
+# makes a collision reliable; WHICH step loses is a race and does not matter.
 
-HK_INDEX_WRITER_COUNT=24
+HK_INDEX_WRITER_COUNT=48
 
 hk_index_writer_scenario_files() {
   local i
@@ -119,6 +119,55 @@ hk_run_pre_commit_with_concurrent_index_writers() {
     triggers+=("index_trigger$i.txt")
   done
   git add "${triggers[@]}"
+  printf 'unstaged %s\n' "$generation" >leftover.txt
+
+  HK_OUTPUT="$(hk run pre-commit 2>&1)"
+  rc=$?
+  echo "  attempt $generation: hk exit=$rc  index.lock-collision=$(hk_saw_index_lock_collision && echo yes || echo no)"
+  return "$rc"
+}
+
+# --- sentinel-shaped scenario ---------------------------------------------------------------------
+#
+# Mirrors a real in-use config rather than one built to collide: many file-only formatter steps, four
+# generators that let hk stage their output, and exactly ONE step that shells out to git. See
+# hk_sentinel_shaped.pkl for why each part is shaped that way.
+
+HK_SENTINEL_TRIGGERS=(
+  src.py
+  conf.yml
+  conf.toml
+  conf.pklconf
+  base.json
+  gen_logo.trigger
+  gen_targets.trigger
+  gen_readme.trigger
+  gen_completions.trigger
+  vm_scripts/deploy.sh
+)
+
+hk_sentinel_scenario_files() {
+  local name
+  mkdir --parents vm_scripts
+  for name in "${HK_SENTINEL_TRIGGERS[@]}"; do
+    printf 'v1\n' >"$name"
+  done
+  printf 'v1\n' >leftover.txt
+}
+
+# hk_run_pre_commit_sentinel_shaped <generation>
+# Sets HK_OUTPUT; returns hk's exit status.
+hk_run_pre_commit_sentinel_shaped() {
+  local generation="$1" name rc
+  git stash clear
+  git reset --quiet
+  rm --force logo.out targets.out readme.out badge_python.out badge_mise.out completions.json
+  git checkout --quiet -- .
+
+  for name in "${HK_SENTINEL_TRIGGERS[@]}"; do
+    printf 'v%s\n' "$generation" >"$name"
+  done
+  git add "${HK_SENTINEL_TRIGGERS[@]}"
   printf 'unstaged %s\n' "$generation" >leftover.txt
 
   HK_OUTPUT="$(hk run pre-commit 2>&1)"

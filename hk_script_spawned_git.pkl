@@ -2,7 +2,8 @@ amends "package://github.com/jdx/hk/releases/download/v1.54.0/hk@1.54.0#/Config.
 
 // The same grown hook, but the git call is one level down inside a generator script that stages
 // its own output. hk sees only an opaque command, so no inference could tell it these steps must
-// not overlap. This is the form real configs have.
+// not overlap. This is the form real configs have, and it collides more readily than the inline
+// form because each step does more work around its git call.
 hooks {
   ["pre-commit"] {
     fix = true
@@ -127,6 +128,126 @@ hooks {
       ["regenerate23"] {
         glob = "index_trigger23.txt"
         fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 23"
+        stage = List()
+      }
+      ["regenerate24"] {
+        glob = "index_trigger24.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 24"
+        stage = List()
+      }
+      ["regenerate25"] {
+        glob = "index_trigger25.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 25"
+        stage = List()
+      }
+      ["regenerate26"] {
+        glob = "index_trigger26.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 26"
+        stage = List()
+      }
+      ["regenerate27"] {
+        glob = "index_trigger27.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 27"
+        stage = List()
+      }
+      ["regenerate28"] {
+        glob = "index_trigger28.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 28"
+        stage = List()
+      }
+      ["regenerate29"] {
+        glob = "index_trigger29.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 29"
+        stage = List()
+      }
+      ["regenerate30"] {
+        glob = "index_trigger30.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 30"
+        stage = List()
+      }
+      ["regenerate31"] {
+        glob = "index_trigger31.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 31"
+        stage = List()
+      }
+      ["regenerate32"] {
+        glob = "index_trigger32.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 32"
+        stage = List()
+      }
+      ["regenerate33"] {
+        glob = "index_trigger33.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 33"
+        stage = List()
+      }
+      ["regenerate34"] {
+        glob = "index_trigger34.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 34"
+        stage = List()
+      }
+      ["regenerate35"] {
+        glob = "index_trigger35.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 35"
+        stage = List()
+      }
+      ["regenerate36"] {
+        glob = "index_trigger36.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 36"
+        stage = List()
+      }
+      ["regenerate37"] {
+        glob = "index_trigger37.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 37"
+        stage = List()
+      }
+      ["regenerate38"] {
+        glob = "index_trigger38.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 38"
+        stage = List()
+      }
+      ["regenerate39"] {
+        glob = "index_trigger39.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 39"
+        stage = List()
+      }
+      ["regenerate40"] {
+        glob = "index_trigger40.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 40"
+        stage = List()
+      }
+      ["regenerate41"] {
+        glob = "index_trigger41.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 41"
+        stage = List()
+      }
+      ["regenerate42"] {
+        glob = "index_trigger42.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 42"
+        stage = List()
+      }
+      ["regenerate43"] {
+        glob = "index_trigger43.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 43"
+        stage = List()
+      }
+      ["regenerate44"] {
+        glob = "index_trigger44.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 44"
+        stage = List()
+      }
+      ["regenerate45"] {
+        glob = "index_trigger45.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 45"
+        stage = List()
+      }
+      ["regenerate46"] {
+        glob = "index_trigger46.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 46"
+        stage = List()
+      }
+      ["regenerate47"] {
+        glob = "index_trigger47.txt"
+        fix = "bash random_fast_sleep.sh && bash regenerate_and_stage.sh 47"
         stage = List()
       }
     }

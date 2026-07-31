@@ -1,0 +1,82 @@
+amends "package://github.com/jdx/hk/releases/download/v1.54.0/hk@1.54.0#/Config.pkl"
+
+// A faithful mirror of a real, in-use pre-commit config (sentinel's), rather than a scenario built to
+// collide. The point is to find out whether an ordinary grown config is exposed, so the shape is copied
+// rather than tuned:
+//
+//   - six formatter/linter steps that rewrite files and never touch the index, two of them chained by
+//     depends, as a lint pipeline is;
+//   - four generator steps that produce an artifact and declare `stage`, so HK does the index write
+//     through its own libgit2 add rather than the step shelling out to git;
+//   - exactly ONE step that runs git itself — `git update-index --chmod=+x`, verbatim from the real
+//     config — because that is all the real config has;
+//   - hook-level `fix`, `stash = "git"` and `stage = true`, as the real config sets them.
+//
+// Delays are 150-600 ms, the startup cost of the `uv run …` wrapper every real step pays. That matters:
+// the interesting overlap is hk staging one generator's output while the chmod step's external git is
+// still running, and slow, staggered steps make that window wider, not narrower.
+hooks {
+  ["pre-commit"] {
+    fix = true
+    stash = "git"
+    stage = true
+    steps {
+      ["actually-format"] {
+        glob = "**/*.py"
+        fix = "bash random_fast_sleep.sh 150 600 && cp src.py src.py.tmp && mv src.py.tmp src.py"
+      }
+      ["python-format"] {
+        glob = "**/*.py"
+        depends = List("actually-format")
+        fix = "bash random_fast_sleep.sh 150 600 && cp src.py src.py.tmp && mv src.py.tmp src.py"
+      }
+      ["python-lint"] {
+        glob = "**/*.py"
+        depends = List("python-format")
+        check = "bash random_fast_sleep.sh 150 600"
+      }
+      ["yaml-files"] {
+        glob = "**/*.yml"
+        fix = "bash random_fast_sleep.sh 150 600 && cp conf.yml conf.yml.tmp && mv conf.yml.tmp conf.yml"
+      }
+      ["toml-files"] {
+        glob = "**/*.toml"
+        fix = "bash random_fast_sleep.sh 150 600 && cp conf.toml conf.toml.tmp && mv conf.toml.tmp conf.toml"
+      }
+      ["pkl-files"] {
+        glob = "**/*.pklconf"
+        fix = "bash random_fast_sleep.sh 150 600 && cp conf.pklconf conf.pklconf.tmp && mv conf.pklconf.tmp conf.pklconf"
+      }
+      ["regenerate-logo"] {
+        glob = "gen_logo.trigger"
+        fix = "bash random_fast_sleep.sh 150 600 && cp gen_logo.trigger logo.out"
+        stage = "logo.out"
+      }
+      ["regenerate-portal-targets"] {
+        glob = "gen_targets.trigger"
+        fix = "bash random_fast_sleep.sh 150 600 && cp gen_targets.trigger targets.out"
+        stage = "targets.out"
+      }
+      ["regenerate-readme"] {
+        glob = "gen_readme.trigger"
+        fix = "bash random_fast_sleep.sh 150 600 && cp gen_readme.trigger readme.out && cp gen_readme.trigger badge_python.out && cp gen_readme.trigger badge_mise.out"
+        stage = List("readme.out", "badge_python.out", "badge_mise.out")
+      }
+      ["regenerate-completions"] {
+        glob = "gen_completions.trigger"
+        fix = "bash random_fast_sleep.sh 150 600 && cp gen_completions.trigger completions.json"
+        stage = "completions.json"
+      }
+      ["json-files"] {
+        glob = "**/*.json"
+        depends = List("regenerate-completions")
+        fix = "bash random_fast_sleep.sh 150 600"
+      }
+      ["vm-scripts-executable"] {
+        glob = "vm_scripts/*.sh"
+        fix = "bash random_fast_sleep.sh 150 600 && git update-index --chmod=+x vm_scripts/deploy.sh"
+        stage = List()
+      }
+    }
+  }
+}
