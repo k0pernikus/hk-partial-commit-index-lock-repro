@@ -13,12 +13,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: "control: no lock held, hk succeeds"
+          - name: "expected green: no lock held, hk succeeds"
             script: check_no_lock_succeeds.sh
-          - name: "lock released inside the 775ms wait: hk recovers (fixed by #1060)"
+          - name: "expected green: lock released inside the 775ms wait, hk recovers (#1060)"
             script: check_lock_released_inside_wait_window_recovers.sh
-          - name: "lock outliving the 775ms wait: hk aborts (unfixed, expected red)"
+          - name: "expected green: lock that never clears aborts, as hk intends"
             script: check_lock_outliving_wait_window_aborts.sh
+          - name: "expected red: parallel steps running git update-index collide on the index"
+            script: check_concurrent_index_writers_collide.sh
+          - name: "expected red: parallel steps whose script runs git collide on the index"
+            script: check_script_spawned_git_collides.sh
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2

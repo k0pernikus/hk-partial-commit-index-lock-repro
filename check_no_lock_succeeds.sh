@@ -11,6 +11,8 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$here/lib_hk_partial_commit.sh"
 
 hk_scenario_setup "$here" || exit 1
+hk_lock_scenario_files
+hk_scenario_commit_base
 
 echo "### control: no index.lock held"
 hk_run_pre_commit_with_lock none

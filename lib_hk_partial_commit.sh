@@ -1,28 +1,29 @@
 # shellcheck shell=bash
-# Shared setup for the three hk partial-commit index.lock checks.
+# Shared setup for the hk pre-commit checks in this repository.
 #
-# Each check builds the SAME scenario — a partial commit, some paths staged and one path left
-# modified but unstaged — and differs only in how long .git/index.lock is held while hk's
-# pre-commit stash runs. hk stashes the unstaged remainder as a path subset through the shell
-# `git stash push -- <paths>`, which is the code path under test.
+# Every check builds a partial commit — some paths staged, one path left modified but unstaged — so
+# hk stashes the unstaged remainder as a path subset through the shell `git stash push -- <paths>`.
 #
-# The checks drive `hk run pre-commit`, NOT `git commit`: with a held .git/index.lock a plain
+# The lock checks drive `hk run pre-commit`, NOT `git commit`: with a held .git/index.lock a plain
 # `git commit` fails on git's OWN lock before hk ever runs, which would confound the result.
 
+# hk_scenario_setup <checkout-dir> [pkl-file]
+# Builds a throwaway repo with the given hk config, installs the pinned hk, and leaves cwd inside it.
 hk_scenario_setup() {
-  local here="$1" repo
+  local here="$1" pkl="${2:-hk.pkl}" repo hkbin
   repo="$(mktemp --directory)"
   # shellcheck disable=SC2064
   trap "rm --recursive --force '$repo'" EXIT
   cd "$repo" || return 1
 
-  cp "$here/hk.pkl" "$here/mise.toml" .
+  cp "$here/$pkl" ./hk.pkl
+  cp "$here/mise.toml" .
+  cp "$here/regenerate_and_stage.sh" "$here/random_fast_sleep.sh" .
   if [ -n "${HK_VERSION:-}" ]; then
     printf '[tools]\n"aqua:jdx/hk" = "%s"\n' "$HK_VERSION" >mise.toml
   fi
   mise trust "$repo/mise.toml" >/dev/null
   mise install >/dev/null
-  local hkbin
   hkbin="$(mise which hk)" || return 1
   PATH="$(dirname "$hkbin"):$PATH"
   export PATH
@@ -34,25 +35,33 @@ hk_scenario_setup() {
   git init --quiet --initial-branch=main
   git config user.email repro@example.com
   git config user.name repro
-  printf 'v1\n' >keep.txt
-  printf 'v1\n' >other.txt
-  git add keep.txt other.txt hk.pkl mise.toml
+}
+
+hk_scenario_commit_base() {
+  git add --all
   git commit --quiet --message init
   hk install >/dev/null
 }
 
-hk_scenario_partial_state() {
+# --- single-step lock scenario -------------------------------------------------------------------
+
+hk_lock_scenario_files() {
+  printf 'v1\n' >keep.txt
+  printf 'v1\n' >other.txt
+}
+
+hk_lock_scenario_partial_state() {
   git stash clear
   printf 'v2\n' >keep.txt
   printf 'v2\n' >other.txt
   git add keep.txt
 }
 
-# Runs `hk run pre-commit` with index.lock held per $1 (none|transient|held).
-# Sets HK_OUTPUT to hk's combined output; returns hk's exit status.
+# hk_run_pre_commit_with_lock <none|transient|held>
+# Sets HK_OUTPUT; returns hk's exit status.
 hk_run_pre_commit_with_lock() {
   local mode="$1" releaser="" rc
-  hk_scenario_partial_state
+  hk_lock_scenario_partial_state
 
   case "$mode" in
     transient)
@@ -75,6 +84,51 @@ hk_run_pre_commit_with_lock() {
 
   echo "  hk exit=$rc  stashes-left=$(git stash list | wc --lines)  other.txt=$(tr --delete '\n' <other.txt)"
   return "$rc"
+}
+
+# --- concurrent index-writer scenario -----------------------------------------------------------
+#
+# Six steps with DISJOINT globs, so hk's file locks see no conflict and run them in parallel. Each
+# step's fix shells out to `git update-index`, an external git outside hk's own Repo mutex, so the
+# six contend for .git/index.lock with nothing serialising them. A shared sleep aligns them, so a
+# collision is near-certain; WHICH step loses is a race and does not matter.
+
+HK_INDEX_WRITER_COUNT=24
+
+hk_index_writer_scenario_files() {
+  local i
+  for ((i = 0; i < HK_INDEX_WRITER_COUNT; i++)); do
+    printf 'v1\n' >"index_trigger$i.txt"
+    printf '#!/usr/bin/env bash\n' >"script$i.sh"
+  done
+  printf 'v1\n' >leftover.txt
+}
+
+# hk_run_pre_commit_with_concurrent_index_writers <generation>
+# Sets HK_OUTPUT; returns hk's exit status.
+hk_run_pre_commit_with_concurrent_index_writers() {
+  local generation="$1" i rc triggers=()
+  # Each attempt must start from the committed state, or artifacts a previous attempt staged change
+  # the scenario and a later run fails for an unrelated reason.
+  git stash clear
+  git reset --quiet
+  rm --force generated*.txt
+  git checkout --quiet -- .
+  for ((i = 0; i < HK_INDEX_WRITER_COUNT; i++)); do
+    printf 'v%s\n' "$generation" >"index_trigger$i.txt"
+    triggers+=("index_trigger$i.txt")
+  done
+  git add "${triggers[@]}"
+  printf 'unstaged %s\n' "$generation" >leftover.txt
+
+  HK_OUTPUT="$(hk run pre-commit 2>&1)"
+  rc=$?
+  echo "  attempt $generation: hk exit=$rc  index.lock-collision=$(hk_saw_index_lock_collision && echo yes || echo no)"
+  return "$rc"
+}
+
+hk_saw_index_lock_collision() {
+  printf '%s\n' "$HK_OUTPUT" | grep --quiet --fixed-strings "index.lock"
 }
 
 hk_print_output() {

@@ -1,29 +1,81 @@
-# hk partial-commit `index.lock` behaviour
+# hk pre-commit `index.lock` behaviour
 
-On a partial commit — some paths staged, one path left modified but unstaged — hk's `stash = "git"` step
-stashes the unstaged remainder through the shell `git stash push … -- <paths>`, and aborts the whole run
-if the worktree `index.lock` is held while it does so.
+**The user story.** A pre-commit hook grows. Every step is small and fast, and several of them touch the
+git index — a generator that stages its output, a `git update-index --chmod=+x`, a codegen task that adds
+what it wrote. Individually they are unremarkable. Run concurrently, they collide on `.git/index.lock`,
+one step dies, and it takes every sibling step with it.
 
-[PR #1060](https://github.com/jdx/hk/pull/1060) (shipped in v1.51.0) fixed the common case: `run_git_stash`
-now waits up to 775 ms for a lock that already exists, so a lock **released inside that window** recovers.
-It is a pre-flight wait, not a retry — the stash command is still issued exactly once — so a lock that
-**outlives the window** still aborts the run.
+This repository pins the latest hk (`1.54.0`) and separates that defect from the lock behaviours that are
+correct, so the two are not confused for each other.
 
-This repository pins the latest hk (`1.54.0`) and checks all three outcomes separately, so the fixed case
-and the unfixed one are visible side by side rather than collapsed into one verdict.
+**hk creates this contention itself.** Its step locking keys on the files a step *declares* — its glob,
+its `stage` list. A `fix` command that writes the index is opaque to it, so hk schedules such steps in
+parallel with nothing serialising them.
 
-## The three checks
+**It is not a timeout being too short.** The 775 ms budget [#1060](https://github.com/jdx/hk/pull/1060)
+added applies only to the three shell `git stash push` sites. hk's index add (`add()`, `src/git.rs:1487`)
+uses libgit2 with **no wait and no retry at all**, so a contended index there fails instantly.
+
+## The five checks
 
 Each is its own script and its own CI job, so each has its own log.
 
-| Check | `index.lock` | Expected | What it establishes |
-|:---|:---|:---|:---|
-| [`check_no_lock_succeeds.sh`](check_no_lock_succeeds.sh) | never held | green | the control — the scenario, the pinned hk and the runner are sound, so any red below is the lock |
-| [`check_lock_released_inside_wait_window_recovers.sh`](check_lock_released_inside_wait_window_recovers.sh) | released after 300 ms | green | #1060's wait works — this is precisely the case it fixed |
-| [`check_lock_outliving_wait_window_aborts.sh`](check_lock_outliving_wait_window_aborts.sh) | held for the whole run | **red today** | the wait is not a retry — the residual bug |
+| Check | Scenario | Expected |
+|:---|:---|:---|
+| [`check_no_lock_succeeds.sh`](check_no_lock_succeeds.sh) | no lock held | green — the control |
+| [`check_lock_released_inside_wait_window_recovers.sh`](check_lock_released_inside_wait_window_recovers.sh) | lock released after 300 ms | green — #1060 works |
+| [`check_lock_outliving_wait_window_aborts.sh`](check_lock_outliving_wait_window_aborts.sh) | lock nothing ever releases | green — aborting is correct |
+| [`check_concurrent_index_writers_collide.sh`](check_concurrent_index_writers_collide.sh) | 24 parallel steps run `git update-index` | **red — the defect** |
+| [`check_script_spawned_git_collides.sh`](check_script_spawned_git_collides.sh) | 24 parallel steps run a script that stages its own output | **red — the defect, realistic form** |
 
-The third check exits non-zero while the bug is present, so its job is red on purpose. It turns green when
-the stash command is retried within a bounded budget rather than merely waited on beforehand.
+## Why three checks are green
+
+They exist to foreclose wrong diagnoses. `#1060` (shipped v1.51.0) added `run_git_stash`, which waits up
+to 775 ms — 25/50/100/200/400 — for an *already-present* lock before issuing the stash.
+
+The middle check shows that recovers a lock released inside the window; run it with `HK_VERSION=1.50.0`
+and it fails, because no wait existed before 1.51.0. The third shows a lock nothing releases still aborts,
+which is deliberate — #1060 says it means to *"preserve Git's normal failure when a lock persists"*. Both
+behaviours are correct and pinned so they cannot regress unnoticed.
+
+## Why two checks are red
+
+24 steps with disjoint globs, so hk's file locks see no conflict and run them concurrently. Each step's
+`fix` writes the index — directly via `git update-index` in one check, via a generator script that stages
+its own output in the other. They collide:
+
+```text
+fatal: Unable to create '<repo>/.git/index.lock': File exists.
+Another git process seems to be running in this repository, e.g. …
+```
+
+**The delays are random, not synchronised.** Each step calls
+[`random_fast_sleep.sh`](random_fast_sleep.sh), which draws its own delay in 0.010–0.149 s. Giving every
+step the same sleep would manufacture the collision; real steps finish at unrelated moments. The cost is
+that any single pair overlapping is unlikely, so the scenario relies on step *count* instead. Measured
+locally, 10 runs each:
+
+| concurrent index writers | runs that collided |
+|:---|:---|
+| 6 | 1 |
+| 12 | 2 |
+| 24 | 9 |
+| 48 | 10 |
+
+At 24 the checks observe 5/5, and each needs only one collision across five attempts to report the defect.
+Which step loses is a race and does not matter; that one loses is the claim.
+
+Three things make it worse than a lost write:
+
+- **No tolerance on this path** — libgit2, no wait, no retry, as above.
+- **One collision aborts every sibling.** The surviving steps report `aborted`, so an unrelated formatter
+  is cancelled by a race it took no part in.
+- **A config author cannot declare the constraint.** There is no way to mark a step as needing exclusive
+  index access. `depends` can serialise by hand, but only if you already know which opaque commands touch
+  the index — and in the script form, hk could not know even in principle.
+
+The second form is the one real configs hit.
+[`regenerate_and_stage.sh`](regenerate_and_stage.sh) stands in for it.
 
 ## Run
 
@@ -31,58 +83,33 @@ the stash command is retried within a bounded budget rather than merely waited o
 bash check_no_lock_succeeds.sh
 bash check_lock_released_inside_wait_window_recovers.sh
 bash check_lock_outliving_wait_window_aborts.sh
+bash check_concurrent_index_writers_collide.sh
+bash check_script_spawned_git_collides.sh
 ```
 
-Override the pinned version to explore other releases:
+Override the pinned version with `HK_VERSION=<x.y.z>`.
 
-```bash
-HK_VERSION=1.50.0 bash check_lock_released_inside_wait_window_recovers.sh
-```
+## Notes
 
-## Why the middle check matters
-
-It is what makes the third check meaningful. The same harness, run across versions (git 2.47.3):
-
-| hk | control | lock released inside the window | lock outliving the window |
-|:---|:---|:---|:---|
-| 1.50.0 | green | **red** — no wait existed yet | red |
-| 1.54.0 | green | **green** — #1060 works | red |
-
-The middle column flipping at 1.51.0 confirms the shipped fix landed, and isolates exactly what it did
-not cover. Without it, a single red result could just as easily mean the fix never worked at all.
-
-## Reading a failure
-
-The checks drive `hk run pre-commit`, not `git commit`: with a held `.git/index.lock` a plain `git commit`
-fails on git's own index lock before hk runs, which would confound the result.
+The lock checks drive `hk run pre-commit`, not `git commit`: with a held `.git/index.lock` a plain
+`git commit` fails on git's own lock before hk runs, which would confound the result.
 [`why_not_git_commit.sh`](why_not_git_commit.sh) demonstrates that.
 
-On 1.54.0 the held case prints hk's own failure at `src/git.rs:84:5`, which is the `cmd.run()?` inside the
-`run_git_stash` helper #1060 added:
+Every check reports `hk exit`, stashes left behind, and the unstaged file's content. Under a held lock
+`git stash push` fails atomically — no stash created, worktree untouched — so a retry could not duplicate
+a stash.
 
-```text
-  stash – Running git stash (1 file)
-git error: could not write index
-Error: exited with code 1
-git stash push --keep-index -m hk --include-untracked -- other.txt
-
-Location:
-    src/git.rs:84:5
-```
-
-Every check reports `hk exit`, how many stashes were left behind, and the unstaged file's content. In each
-failing case that is `stashes-left=0` with the file unchanged: under a held lock `git stash push` fails
-atomically, creating no stash and leaving the worktree alone — so a bounded retry around the command cannot
-duplicate a stash.
-
-Git's wording for the contention differs by version, which is why the checks key on hk's exit status rather
-than on matching an error string: git 2.54.0 reports `Unable to create '…/index.lock': File exists` followed
-by `could not write index`, while git 2.47.3 reports only the latter.
+Git's wording differs by version, so the checks key on hk's exit status rather than on matching an error
+string: git 2.54.0 reports `Unable to create '…/index.lock': File exists` followed by
+`could not write index`, while git 2.47.3 reports only the latter.
 
 ## Files
 
-- `check_*.sh` — the three checks above, one scenario each.
-- `lib_hk_partial_commit.sh` — shared scenario setup: the temp repo, the partial state, and the lock modes.
+- `check_*.sh` — the five checks above.
+- `lib_hk_partial_commit.sh` — shared scenario setup and the lock / concurrency modes.
+- `hk.pkl` — minimal config for the lock checks: `stash = "git"` plus one no-op step.
+- `hk_concurrent_index_writers.pkl`, `hk_script_spawned_git.pkl` — the two grown, racing configs.
+- `random_fast_sleep.sh` — per-step random delay, so the race is not manufactured.
+- `regenerate_and_stage.sh` — stands in for a generator that stages its own output.
 - `why_not_git_commit.sh` — why `hk run pre-commit` is used instead of `git commit`.
-- `hk.pkl` — minimal pre-commit config: `stash = "git"` plus one no-op step.
 - `mise.toml` — pins `aqua:jdx/hk@1.54.0`.

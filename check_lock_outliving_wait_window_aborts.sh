@@ -1,22 +1,17 @@
 #!/usr/bin/env bash
-# CHECKS: an index.lock that outlives hk's 775 ms wait window still aborts the whole commit.
+# CHECKS: a lock that never clears aborts the run — hk's INTENDED behaviour, pinned so it stays.
 #
-# This is the case PR #1060 did NOT cover, and the reason this repository is red. run_git_stash
-# waits only while the lock ALREADY exists, then issues `git stash push` exactly once:
+# This check passes when hk aborts. That is not a bug: #1060 states outright that it means to
+# "preserve Git's normal failure when a lock persists", and a lock nobody releases is exactly that
+# case. The lock here is a bare file this script creates and never removes until hk has returned, so
+# no process holds it and no amount of waiting could ever recover — refusing to proceed is correct.
 #
-#     for delay in LOCK_RETRY_DELAYS {
-#         if !index_lock.exists() { break; }
-#         thread::sleep(delay);
-#     }
-#     cmd.run()?;
-#
-# It is a pre-flight wait, not a retry. Nothing re-checks the lock after the final 400 ms sleep, and
-# nothing re-issues the command, so a lock still held when the budget runs out — or acquired during
-# the command — fails the commit outright. On v1.54.0 hk reports the failure at src/git.rs:84:5,
-# which is that `cmd.run()?` inside run_git_stash itself.
-#
-# This check EXITS NON-ZERO while the bug is present, so its job is RED on purpose. It turns green
-# when the stash command is retried within a bounded budget instead of merely waited on beforehand.
+# It is kept as a passing check for two reasons. It bounds the wait: together with the companion
+# transient check it shows the 775 ms budget recovers what is recoverable and gives up on what is
+# not, so neither behaviour can regress unnoticed. And it forecloses a wrong diagnosis — that the
+# index.lock failures this repository exists for are a matter of the timeout being too short. They
+# are not. The defect lives in the concurrent-index-writer checks, where hk's own scheduling creates
+# the contention with no lock planted at all.
 set -uo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,21 +19,22 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$here/lib_hk_partial_commit.sh"
 
 hk_scenario_setup "$here" || exit 1
+hk_lock_scenario_files
+hk_scenario_commit_base
 
-echo "### index.lock held for the whole run — outlives hk's 775 ms wait window"
+echo "### index.lock held for the whole run — a stale lock nothing will release"
 hk_run_pre_commit_with_lock held
 rc=$?
 
 echo
 if [ "$rc" -ne 0 ]; then
-  hk_print_output
-  echo "BUG PRESENT: the lock outlived the wait window and hk aborted the commit."
-  echo "The companion check proves a lock released inside the window recovers, so the wait itself"
-  echo "works — what is missing is a retry of the stash command once the budget is exhausted."
-  echo "Note stashes-left=0 above: git fails atomically here, creating no stash and leaving the"
-  echo "worktree untouched, so a bounded retry cannot duplicate a stash."
-  exit 1
+  echo "PASS: hk refused to proceed against a lock that never clears, which is the documented"
+  echo "intent of #1060. Note stashes-left=0 above — git fails atomically here, creating no stash"
+  echo "and leaving the worktree untouched."
+  exit 0
 fi
 
-echo "FIXED: a lock outliving the wait window no longer aborts the run — the retry landed."
-exit 0
+hk_print_output
+echo "FAIL: hk proceeded despite a lock that was never released. Either the wait now blocks"
+echo "indefinitely, or the stash bypassed the lock — both are worse than the abort this pins."
+exit 1
