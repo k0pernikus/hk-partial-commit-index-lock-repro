@@ -33,7 +33,7 @@ hk_scenario_commit_base
 echo "### the same 48 git-invoking steps, each in its own Group"
 collisions=0
 failures=0
-for attempt in 2 3 4 5; do
+for attempt in 2 3 4 5 6 7 8 9; do
   if ! hk_run_pre_commit_with_concurrent_index_writers "$attempt"; then
     failures=$((failures + 1))
     if hk_saw_index_lock_collision; then
@@ -47,7 +47,7 @@ done
 
 echo
 if [ "$collisions" -eq 0 ] && [ "$failures" -eq 0 ]; then
-  echo "PASS: 4/4 runs clean. One group per git-invoking step serialises them and the collision is gone,"
+  echo "PASS: 8/8 runs clean. One group per git-invoking step serialises them and the collision is gone,"
   echo "using only what hk already provides. Its sibling check, identical but ungrouped, goes red — so"
   echo "the gap is not a missing feature but a missing hint in the failure that names this remedy."
   exit 0
@@ -55,11 +55,11 @@ fi
 
 hk_print_output
 if [ "$collisions" -gt 0 ]; then
-  echo "FAIL: $collisions/4 runs still collided on index.lock despite one group per step. Groups are not"
+  echo "FAIL: $collisions/8 runs still collided on index.lock despite one group per step. Groups are not"
   echo "serialising as hk documents them, which is a more serious defect than the ungrouped race."
   exit 1
 fi
 
-echo "FAIL: $failures/4 runs failed without an index.lock collision, so this scenario is broken rather"
+echo "FAIL: $failures/8 runs failed without an index.lock collision, so this scenario is broken rather"
 echo "than informative. Fix the harness before drawing any conclusion from the grouped result."
 exit 1

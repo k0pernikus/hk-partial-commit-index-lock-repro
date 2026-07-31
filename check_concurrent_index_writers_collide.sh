@@ -35,7 +35,7 @@ hk_scenario_commit_base
 
 echo "### six steps with disjoint globs, each running an external git update-index concurrently"
 collisions=0
-for attempt in 2 3 4 5 6; do
+for attempt in 2 3 4 5 6 7 8 9; do
   if ! hk_run_pre_commit_with_concurrent_index_writers "$attempt"; then
     if hk_saw_index_lock_collision; then
       collisions=$((collisions + 1))
@@ -48,7 +48,7 @@ done
 
 echo
 if [ "$collisions" -gt 0 ]; then
-  echo "DEFECT REPRODUCED: $collisions/5 runs died on index.lock contention between hk's own"
+  echo "DEFECT REPRODUCED: $collisions/8 runs died on index.lock contention between hk's own"
   echo "concurrently-scheduled steps, with no lock planted and nothing stalling. hk cannot know that"
   echo "an opaque fix command writes the index, so it parallelises steps that must not overlap, and"
   echo "one collision aborts every sibling step."

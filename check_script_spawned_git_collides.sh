@@ -28,7 +28,7 @@ hk_scenario_commit_base
 
 echo "### six steps with disjoint globs, each invoking a script that runs git add itself"
 collisions=0
-for attempt in 2 3 4 5 6; do
+for attempt in 2 3 4 5 6 7 8 9; do
   if ! hk_run_pre_commit_with_concurrent_index_writers "$attempt"; then
     if hk_saw_index_lock_collision; then
       collisions=$((collisions + 1))
@@ -41,7 +41,7 @@ done
 
 echo
 if [ "$collisions" -gt 0 ]; then
-  echo "DEFECT REPRODUCED: $collisions/5 runs died on index.lock contention, with the git call hidden"
+  echo "DEFECT REPRODUCED: $collisions/8 runs died on index.lock contention, with the git call hidden"
   echo "inside a generator script. hk saw only 'bash regenerate_and_stage.sh <n>' and disjoint globs,"
   echo "so it scheduled the steps in parallel. This is the form real configs hit."
   exit 1
