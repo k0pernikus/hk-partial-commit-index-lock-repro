@@ -1,0 +1,26 @@
+name: hk index.lock behaviour
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "control: no lock held, hk succeeds"
+            script: check_no_lock_succeeds.sh
+          - name: "lock released inside the 775ms wait: hk recovers (fixed by #1060)"
+            script: check_lock_released_inside_wait_window_recovers.sh
+          - name: "lock outliving the 775ms wait: hk aborts (unfixed, expected red)"
+            script: check_lock_outliving_wait_window_aborts.sh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: ${{ matrix.name }}
+        run: bash ${{ matrix.script }}
